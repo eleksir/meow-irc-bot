@@ -1,0 +1,12 @@
+.idea/**
+.fleet/**
+.vscode/**
+vendor_perl/**
+data/db/**
+data/config.json
+TODO
+.env
+*.pid
+*.log
+_Deparsed_XSubs.pm
+.vstags
