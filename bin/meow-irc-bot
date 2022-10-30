@@ -1,0 +1,187 @@
+#!/usr/bin/perl
+
+use 5.030; ## no critic (ProhibitImplicitImport)
+use strict;
+use warnings;
+use utf8;
+use open qw (:std :utf8);
+use English qw ( -no_match_vars );
+use version; our $VERSION = qw (1.0);
+
+my $workdir;
+
+# До запуска основной логики, выясним, где находится запускаемый скрипт и прыгнем на каталог выше
+BEGIN {
+	use Cwd qw (chdir abs_path);
+	my @CWD = split /\//, abs_path ($PROGRAM_NAME);
+
+	if ($#CWD > 1) {
+		$#CWD = $#CWD - 2;
+	}
+
+	$workdir = join '/', @CWD;
+	chdir $workdir;
+}
+
+use lib ("$workdir/lib", "$workdir/vendor_perl", "$workdir/vendor_perl/lib/perl5");
+no Cwd;
+use Cwd::utf8       qw (chdir abs_path);
+use POSIX           qw (setgid setuid setsid);
+use File::Basename  qw (basename dirname);
+use File::Path      qw (make_path);
+use File::Spec         ();
+use Log::Any        qw ($log);
+use Log::Any::Adapter  ();
+use Log::Any::For::Std ();
+use BotLib::Conf    qw (LoadConf);
+use BotLib::Util    qw (SigIntHandler SigQuitHandler SigTermHandler);
+use IRCBot          qw (RunIRCBot);
+
+sub daemonize ();
+sub __fork ();
+
+local $OUTPUT_AUTOFLUSH = 1;
+
+my $piddir = '/var/run/' . basename (abs_path $PROGRAM_NAME);
+my $C = LoadConf ();
+my $loglevel = $C->{'loglevel'};
+$C->{loglevel} = 'notice' unless defined $C->{loglevel};
+my $logfile;
+# Глобальный IRC Client объектик $MAIN::IRC для хранения состояния
+my $IRC; ## no critic (Variables::ProhibitUnusedVariables)
+
+if (defined $C->{'log'}) {
+	$logfile = $C->{'log'};
+} elsif (defined $C->{'debug_log'}) {
+	$logfile = $C->{'debug_log'};
+}
+
+# Если программа запущена из-под рута, создадим путь до каталога с pid-файлом, подправим владельца, тоже самое для лога
+if ($UID == 0) {
+	my $user = $C->{user};
+	die "Unable to run as root, please define unprivileged user in config.json\n" unless (defined $user);
+	my ($uid, $gid) = (getpwnam $user)[2,3];
+
+	unless (-d $piddir) {
+		make_path (
+			$piddir, {
+				uid   => $uid,
+				group => $gid,
+			},
+		) or die "Unable to create $piddir: $OS_ERROR\n";
+	}
+
+	if (defined $logfile) {
+		my $logdir = dirname $logfile;
+
+		unless (-d $logdir) {
+			make_path (
+				$logdir, {
+					uid   => $uid,
+					group => $gid,
+				},
+			) or die "Unable to create $logdir: $OS_ERROR\n";
+		}
+	}
+
+# Дропнем привилегии
+	setgid ($gid) or die "Unable to switch to group of $user: $OS_ERROR\n";
+	setuid ($uid) or die "Unable to switch to account $user: $OS_ERROR\n";
+} else {
+	$piddir = $workdir;
+}
+
+if (defined $logfile) {
+	Log::Any::Adapter->set ('File', $logfile, log_level => $loglevel);
+
+	# События от модуля CHI по-умолчанию сыпятся с избыточной вербозностью, нам это не надо.
+	Log::Any::Adapter->set (
+		{
+			category => 'CHI::Driver',
+		},
+		'File',
+		$logfile,
+		log_level => 'warn',
+	);
+} else {
+	# no log defined so set loglevel to the least verbose
+	Log::Any::Adapter->set ('File', File::Spec->devnull, 'log_level'=>'emergency');
+}
+
+# Дважды форкаемся и уходим в фон, stdin цепляем к /dev/null
+if (defined $C->{daemonize} && $C->{daemonize}) {
+	daemonize ();
+}
+
+# Записываем pid-файл
+my $apath = abs_path $PROGRAM_NAME;
+
+unless (defined $apath) {
+	$log->fatal ("[FATAL] Unable to get abs_path: $OS_ERROR");
+	exit 1;
+}
+
+my $pidfile = sprintf '%s/%s.pid', $piddir, basename $apath;
+$log->info ("[INFO] Creating pidfile at $pidfile");
+
+open (my $pid, '>', $pidfile) or do {
+	$log->fatal ("[FATAL] Error opening $pidfile: $OS_ERROR");
+	exit 1;
+};
+
+print $pid $PID or do {
+	$log->fatal ("[FATAL] Error writing to $pidfile: $OS_ERROR");
+	exit 1;
+};
+
+close $pid;
+
+local $SIG{INT}  = \&SigIntHandler;
+local $SIG{TERM} = \&SigTermHandler;
+local $SIG{QUIT} = \&SigQuitHandler;
+
+# Проставим правильный proctitle
+$PROGRAM_NAME = abs_path $PROGRAM_NAME;  ## no critic (Variables::RequireLocalizedPunctuationVars)
+
+RunIRCBot ();
+
+if (-e $pidfile) {
+	unlink $pidfile;
+}
+
+exit 0;
+
+# Демонизирует программу (double fork() && detach from terminal, etc)
+# undef daemonize()
+sub daemonize () {
+	__fork ();
+	setsid ();
+	open STDIN, '<', File::Spec->devnull;   ## no critic (InputOutput::RequireCheckedSyscalls, InputOutput::RequireCheckedOpen)
+	# Мы работаем с STDOUT && STDERR через Log::Any::For::Std, цеплять их к /dev/null мы поэтому и не можем
+	#open (STDOUT, '>', '/dev/null'); ## no critic (InputOutput::RequireCheckedSyscalls, InputOutput::RequireCheckedOpen)
+	#open (STDERR, '>', '/dev/null'); ## no critic (InputOutput::RequireCheckedSyscalls, InputOutput::RequireCheckedOpen)
+	__fork ();
+	umask 0;
+	return;
+}
+
+# Форкает программу и завершает родителя
+# undef __fork()
+sub __fork () {
+	my $pid = fork;
+
+	unless (defined $pid) {
+		$log->fatal ("[FATAL] Can't fork: $OS_ERROR");
+		exit 1;
+	}
+
+	if ($pid != 0) {
+		exit 0;
+	}
+
+	return;
+}
+
+__END__
+
+# vim: set ft=perl noet ai ts=4 sw=4 sts=4:

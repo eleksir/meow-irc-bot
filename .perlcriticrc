@@ -1,0 +1,62 @@
+#!/usr/bin/env perlcritic
+
+# Задействованные модули критика:
+#
+# Perl::Critic::More
+# Perl::Critic::Pulp
+# Perl::Critic::TooMuchCode
+# Perl::Critic::Lax
+# Perl::Critic::Policy::CompileTime
+# Perl::Critic::Policy::ProhibitImplicitImport
+# Perl::Critic::Policy::Dynamic::NoIndirect
+# Perl::Critic::StricterSubs
+# Perl::Critic::Policy::CodeLayout::RequireUseUTF8
+
+severity  = 1
+verbose   = 9
+
+[-CodeLayout::RequireTidyCode]
+[-Editor::RequireEmacsFileVariables]
+[-Modules::RequirePerlVersion]
+[-Modules::RequirePerlVersionVar]
+[-Modules::RequireVersionVar]
+[-ValuesAndExpressions::ProhibitMagicNumbers]
+[-TooMuchCode::ProhibitUnnecessaryUTF8Pragma]
+[-NamingConventions::Capitalization]
+[-ControlStructures::ProhibitUnlessBlocks]
+[-InputOutput::RequireCheckedSyscalls]
+[-InputOutput::RequireCheckedClose]
+[-TooMuchCode::ProhibitDuplicateLiteral]
+[-Subroutines::ProhibitExplicitReturnUndef]
+[-ErrorHandling::RequireUseOfExceptions]
+[-Subroutines::ProhibitExplicitReturnUndef]
+[-Lax::RequireConstantOnLeftSideOfEquality::ExceptEq]
+[-ValuesAndExpressions::RequireConstantOnLeftSideOfEquality]
+[-ValuesAndExpressions::RestrictLongStrings]
+[-Lax::ProhibitEmptyQuotes::ExceptAsFallback]
+[-ValuesAndExpressions::ProhibitEmptyQuotes]
+[-Variables::ProhibitReusedNames]
+[-Subroutines::RequireArgUnpacking]
+[-ControlStructures::ProhibitPostfixControls]
+[-ValuesAndExpressions::ProhibitNoisyQuotes]
+[-ControlStructures::ProhibitDeepNests]
+[-ControlStructures::ProhibitCStyleForLoops]
+[-Subroutines::ProhibitExcessComplexity]
+[-Modules::ProhibitExcessMainComplexity]
+[-RegularExpressions::RequireDotMatchAnything]
+[-RegularExpressions::RequireExtendedFormatting]
+[-RegularExpressions::RequireLineBoundaryMatching]
+[-InputOutput::RequireBracedFileHandleWithPrint]
+[-InputOutput::RequireBriefOpen]
+#[-Modules::RequireExplicitInclusion]
+[-ControlStructures::ProhibitNegativeExpressionsInUnlessAndUntilConditions]
+[-ControlStructures::ProhibitCascadingIfElse]
+[-InputOutput::ProhibitBacktickOperators]
+[-CodeLayout::ProhibitParensWithBuiltins]
+# We have to use vars from neighbor namespace :(
+[-RegularExpressions::ProhibitComplexRegexes]
+[-RegularExpressions::ProhibitSingleCharAlternation]
+[-CodeLayout::RequireASCII]
+
+[-Miscellanea::ProhibitUnrestrictedNoCritic]
+# to avoid critic cpanfile

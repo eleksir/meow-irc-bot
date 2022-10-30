@@ -1,0 +1,69 @@
+{
+    # Куда коннекаться
+    "server" : "127.0.0.1",
+    "port" : "6667",
+    "ssl" : 0,
+
+    # IRC nick
+    "nick" : "meow",
+
+    # Список каналов, к которым необходимо заджойниться
+    "channels": {
+        "assist": {
+            "name": "#a",
+            "topics": {
+                "day" : {
+                    # Неделя начинается с воскресенья :)
+                    "0": "Сегодня отдыхаем",
+                    "1": "Сегодня срез",
+                    "2": "Сегодня раскладка",
+                    "3": "Cегодня срез",
+                    "4": "Сегодня раскладка",
+                    "5": "Сегодня пятница",
+                    "6": "Сегодня отдыхаем"
+                },
+            }
+        },
+        "notify": {
+            "name": "#notifications",
+            "topic": "Канал уведомлений"
+        }
+    },
+
+    # datadir, куда складываются данные - databases, datafiles, etc
+    "datadir": "data",
+
+    # Базы данных и их относительные пути (относительно datadir)
+    "db": {
+        "notifications": "db/notifications",
+        "delayed_notifications": "db/delayed_notifications"
+    },
+
+    # Настройки уведомлений
+    "notifications": {
+        # 0 - ничего в канал notify не пишем
+        "enabled": 1,
+        # Забываем все нотификашки старее, чем retention_days дней
+        "retention_days": 2,
+        # 0 - не показывать Desktop Notification в MacOS/Linux
+        "desktop_notification": 1,
+        # Звук уведомлений, желательно абсолютный путь
+        "sound": "data/sounds/bell.mp3"
+    },
+
+    # Отложенные уведомления происходят, джоинится на канал notify
+    "delayed_notifications": {
+        "enabled": 1,
+        "retention_days": 2
+    },
+
+    # Настройки логов
+    "log" : "data/meow.log",
+    "loglevel" : "info",
+
+    # pid-файл
+    #"pid" : "/var/run/meow/meow.pid",
+
+    # Превращаемся ли в демона, как обычный unix-style сервис или висисим на переднем плане, как systemd-сервис
+    "daemonize": 0
+}
