@@ -13,7 +13,7 @@
 	# Список каналов, к которым необходимо заджойниться
 	"channels": {
 		"assist": "#a",
-		"notify": "#registry"
+		"registry": "#registry"
 	},
 
 	# datadir, куда складываются данные - databases, datafiles, etc
@@ -22,6 +22,15 @@
 	# Базы данных и их относительные пути (относительно datadir)
 	"db": {
 		"todo": "db/todo"
+	},
+
+	# Настройки модуля rgistry
+	"registry": {
+		# Урл, где находится регистри
+		"url": "https://registry.lan",
+		# Basic-авторизация
+		"user": "docker",
+		"password": "secret"
 	},
 
 	# Настройки логов

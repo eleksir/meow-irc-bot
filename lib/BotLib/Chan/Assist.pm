@@ -35,8 +35,6 @@ sub Help {
 	$text .= "${csign}cal                        - календарик\n";
 	$text .= "${csign}exit                       - завершить работу бота\n";
 	$text .= "${csign}quit                       - завершить работу бота\n";
-	$text .= "${csign}notify me after N [s|m|h]  - одноразовая напоминалка через desktop notification\n";
-	$text .= "${csign}n N[s|m|h] message         - одноразовая напоминалка через desktop notification\n";
 	$text .= "${csign}todo                       - выводит списк запланированных дел\n";
 	$text .= "${csign}todo -d N                  - удаляет из списка запланированных дел дело N\n";
 	$text .= "${csign}todo ДЕЛО                  - добавляет в списк запланированных дел ДЕЛО\n";

@@ -16,6 +16,7 @@ requires "Encode",                  "==3.17";
 requires "English",                 "0";
 requires "File::Basename",          "==2.85";
 requires "File::Path",              "==2.18";
+requires "HTTP::Tiny",              "==0.088";
 requires "IO::Socket::SSL",         "==2.074";
 requires "JSON::XS",                "==4.03";
 requires "JSON::PP",                "==4.09";

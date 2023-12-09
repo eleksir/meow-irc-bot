@@ -11,8 +11,8 @@ use JSON::XS                   ();
 use Log::Any                qw ($log);
 
 use BotLib::Conf            qw (LoadConf);
-use BotLib::Chan::Assist    qw (Help Todo Md5Str Sha1Str Sha224Str Sha256Str Sha384Str Sha512Str Crc32Str MurmurhashStr
-                                B64Str UrlencodeStr IrandNum);
+use BotLib::Chan::Assist       ();
+use BotLib::Chan::Registry     ();
 use BotLib::Util            qw (runcmd);
 
 use version; our $VERSION = qw (1.0);
@@ -94,7 +94,7 @@ sub Command {
 
 	if ($chatid eq $c->{channels}->{assist}) {
 		if ($cmd eq 'help' || $cmd eq 'помощь') {
-			$reply = Help ();
+			$reply = BotLib::Chan::Assist::Help ();
 		} elsif ($cmd eq 'version'  ||  $cmd eq 'ver') {
 			$reply = 'Версия нуль.чего-то_там.чего-то_там';
 		} elsif ($text eq '=(' || $text eq ':(' || $text eq '):') {
@@ -124,31 +124,37 @@ sub Command {
 		} elsif ($cmd eq 'quit' || $cmd eq 'exit') {
 			SigHandler ('exit');
 		} elsif ($cmd =~ /^(todo\s*|todo\s+.+)$/) {
-			$reply = Todo ($cmd);
+			$reply = BotLib::Chan::Assist::Todo ($cmd);
 		} elsif ($cmd =~ /^b64\s(.*)/) {
-			$reply = B64Str ($1);
+			$reply = BotLib::Chan::Assist::B64Str ($1);
 		} elsif ($cmd =~ /^md5\s(.*)/) {
-			$reply = Md5Str ($1);
+			$reply = BotLib::Chan::Assist::Md5Str ($1);
 		} elsif ($cmd =~ /^sha1\s(.*)/) {
-			$reply = Sha1Str ($1);
+			$reply = BotLib::Chan::Assist::Sha1Str ($1);
 		} elsif ($cmd =~ /^sha224\s(.*)/) {
-			$reply = Sha224Str ($1);
+			$reply = BotLib::Chan::Assist::Sha224Str ($1);
 		} elsif ($cmd =~ /^sha256\s(.*)/) {
-			$reply = Sha256Str ($1);
+			$reply = BotLib::Chan::Assist::Sha256Str ($1);
 		} elsif ($cmd =~ /^sha384\s(.*)/) {
-			$reply = Sha384Str ($1);
+			$reply = BotLib::Chan::Assist::Sha384Str ($1);
 		} elsif ($cmd =~ /^sha512\s(.*)/) {
-			$reply = Sha512Str ($1);
+			$reply = BotLib::Chan::Assist::Sha512Str ($1);
 		} elsif ($cmd =~ /^crc32\s(.*)/) {
-			$reply = Crc32Str ($1);
+			$reply = BotLib::Chan::Assist::Crc32Str ($1);
 		} elsif ($cmd =~ /^murmurhash\s(.*)/) {
-			$reply = MurmurhashStr ($1);
+			$reply = BotLib::Chan::Assist::MurmurhashStr ($1);
 		} elsif ($cmd =~ /^urlencode\s(.*)/) {
-			$reply = UrlencodeStr ($1);
+			$reply = BotLib::Chan::Assist::UrlencodeStr ($1);
 		} elsif ($cmd =~ /^rand\s+(.*)\s*/) {
-			$reply = IrandNum ($1);
+			$reply = BotLib::Chan::Assist::IrandNum ($1);
 		} elsif ($cmd eq 'unixtime') {
 			$reply = time ();
+		}
+	} elsif ($chatid eq $c->{channels}->{registry}) {
+		if ($cmd eq 'help' || $cmd eq 'помощь') {
+			$reply = BotLib::Chan::Registry::Help ();
+		} elsif ($cmd eq 'ls') {
+			$reply = BotLib::Chan::Registry::ListProjects ();
 		}
 	}
 

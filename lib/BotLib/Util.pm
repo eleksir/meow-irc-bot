@@ -93,7 +93,10 @@ sub utf2b64 {
 	}
 
 	my $bytes = encode_utf8 $string;
-	return encode_base64 $bytes;
+	my $str   = encode_base64 $bytes;
+	chomp ($str);
+
+	return $str;
 }
 
 # Берёт от даденной строки sha1 и кодирует "по base64"

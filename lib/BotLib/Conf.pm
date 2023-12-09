@@ -18,6 +18,8 @@ our @EXPORT_OK = qw (LoadConf);
 
 local $OUTPUT_AUTOFLUSH = 1;
 
+# TODO: Валидировать конфиг
+
 # Загружает конфиг в hashref
 # $hashref LoadConf()
 sub LoadConf {
