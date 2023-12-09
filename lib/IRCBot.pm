@@ -17,10 +17,8 @@ use JSON::XS              qw (decode_json encode_json);
 use Log::Any              qw ($log);
 
 use BotLib                qw (Command SigIntHandler SigTermHandler SigQuitHandler);
-use BotLib::Command       qw (PrintMsg);
 use BotLib::Conf          qw (LoadConf);
-use BotLib::Periodic      qw (PollNotifications CleanExpiredEntries);
-use BotLib::Util          qw (rakedata storedata deletedata);
+use BotLib::Util          qw (rakedata storedata PrintMsg);
 
 use version; our $VERSION = qw (1.0);
 use Exporter qw (import);
@@ -38,20 +36,6 @@ sub RunIRCBot {
 	my $sigint  = AnyEvent->signal (signal => 'INT',  cb => \&SigIntHandler);
 	my $sigterm = AnyEvent->signal (signal => 'TERM', cb => \&SigTermHandler);
 	my $sigquit = AnyEvent->signal (signal => 'QUIT', cb => \&SigQuitHandler);
-
-	# Раз в секунду опрашиваем базу с нотификашками
-	my $pollnotifications = AnyEvent->timer (
-		after    => 3, # seconds
-		interval => 1, # second
-		cb       => \&PollNotifications,
-	);
-
-	# Раз в 15 минут чистим базы от просроченных записей
-	my $cleandatabeses = AnyEvent->timer (
-		after    => 900, # seconds
-		interval => 900, # seconds
-		cb       => \&CleanExpiredEntries,
-	);
 
 	# Looks butt-ugly, but we have to make global var calls... err calls to MAIN namespace var
 	$MAIN::IRC = AnyEvent::IRC::Client->new (send_initial_whois => 1); ## no critic (Modules::RequireExplicitInclusion)
@@ -225,68 +209,6 @@ sub RunIRCBot {
 				$log->info (sprintf '[INFO] I joined to %s channel', $channel);
 			} else {
 				$log->info( sprintf '[INFO] %s joined to %s channel', $nick, $channel);
-
-				# Покажем отложенные уведомления пользователю в личку
-				if ($channel eq $c->{channels}->{notify}) {
-					# Юзер заджойнился в канал с нотификашками, надо ему в приват вывалить все нотификашки, которые
-					# были, пока его не было, либо то, что было за последние retention_days
-					my $notifications = rakedata ('delayed_notifications');
-					my $title_shown = 0;
-
-					foreach my $timestamp (sort keys (%{$notifications})) {
-						my $show = 1;
-						my $item = decode_json ($notifications->{$timestamp});
-
-						unless (defined $item) {
-							$log->error ("[ERROR] Unable to decode json from $c->{db}->{delayed_notifications} db: $EVAL_ERROR");
-						}
-
-						foreach my $user (@{$item->{users_shown}}) {
-							if ($user eq $nick) {
-								$show = 0;
-								last;
-							}
-						}
-
-						if ($show) {
-							push @{$item->{users_shown}}, $nick;
-
-							unless ($title_shown) {
-								PrintMsg ($nick, 'Missing notifications since your last visit or for 2 days:');
-								$title_shown = 1;
-							}
-
-							my $msg = sprintf (
-								'Channel %s: %s',
-								$item->{channel},
-								$item->{message},
-							);
-
-							if ($c->{delayed_notifications}->{enabled}) {
-								PrintMsg ($nick, $msg);
-							}
-
-							deletedata ('delayed_notifications', $item->{timestamp});
-							# TODO: pretty jsonl
-							my $json = encode_json $item;
-
-							storedata (
-								$c->{db}->{delayed_notifications},
-								$item->{timestamp},
-								$json,
-								$item->{expiration_time},
-							);
-						}
-					}
-				}
-
-				# Заинвайтим пользователя в канал notify
-				if ($channel eq $c->{channels}->{assist}) {
-					if ($c->{notifications}->{enabled}) {
-						$log->debug ("[DEBUG] Inviting $nick to $c->{channels}->{notify}");
-						$MAIN::IRC->send_srv ('INVITE', $nick, $c->{channels}->{notify});
-					}
-				}
 			}
 
 			return;
@@ -326,7 +248,7 @@ sub RunIRCBot {
 	$MAIN::IRC->ctcp_auto_reply ('SOURCE',     ## no critic (Modules::RequireExplicitInclusion)
 		[
 			'SOURCE',
-			'https://github.com/elersir/meow-irc-bot',
+			'https://github.com/eleksir/meow-irc-bot',
 		],
 	);
 
@@ -352,7 +274,7 @@ sub RunIRCBot {
 	);
 
 	if ($c->{ssl}) {
-		$MAIN::IRC->enable_ssl (); ## no critic (Modules::RequireExplicitInclusion)
+		$MAIN::IRC->enable_ssl ();             ## no critic (Modules::RequireExplicitInclusion)
 	}
 
 	$MAIN::IRC->connect (                      ## no critic (Modules::RequireExplicitInclusion)

@@ -4,20 +4,20 @@ use 5.030; ## no critic (ProhibitImplicitImport)
 use strict;
 use warnings;
 use utf8;
-use open            qw (:std :utf8);
-use English         qw ( -no_match_vars );
+use open                    qw (:std :utf8);
+use English                 qw ( -no_match_vars );
 
-use JSON::XS           ();
-use Log::Any        qw ($log);
+use JSON::XS                   ();
+use Log::Any                qw ($log);
 
-use BotLib::Conf    qw (LoadConf);
-use BotLib::Command qw (Help Notify Todo Md5Str Sha1Str Sha224Str Sha256Str Sha384Str Sha512Str Crc32Str MurmurhashStr
-                        B64Str UrlencodeStr IrandNum);
-use BotLib::Util    qw (runcmd);
+use BotLib::Conf            qw (LoadConf);
+use BotLib::Chan::Assist    qw (Help Todo Md5Str Sha1Str Sha224Str Sha256Str Sha384Str Sha512Str Crc32Str MurmurhashStr
+                                B64Str UrlencodeStr IrandNum);
+use BotLib::Util            qw (runcmd);
 
 use version; our $VERSION = qw (1.0);
-use Exporter qw (import);
-our @EXPORT_OK = qw (Command SigHandler SigIntHandler SigTermHandler SigQuitHandler);
+use Exporter                qw (import);
+our @EXPORT_OK =            qw (Command SigHandler SigIntHandler SigTermHandler SigQuitHandler);
 
 local $OUTPUT_AUTOFLUSH = 1;
 
@@ -123,16 +123,6 @@ sub Command {
 			}
 		} elsif ($cmd eq 'quit' || $cmd eq 'exit') {
 			SigHandler ('exit');
-		} elsif ($cmd =~ /^(notify|remind)\s+me\s+after\s+(\d+)\s*(s|seconds|m|minutes|h|hours)\s+(.*)$/) {
-			my $amount = $2;
-			my $units = $3;
-			my $message = $4;
-			$reply = Notify ($chatid, $amount, $units, $message);
-		} elsif ($cmd =~ /n\s+(\d+)(s|m|h)\s+(.*)$/) {
-			my $amount = $1;
-			my $units = $2;
-			my $message = $3;
-			$reply = Notify ($chatid, $amount, $units, $message);
 		} elsif ($cmd =~ /^(todo\s*|todo\s+.+)$/) {
 			$reply = Todo ($cmd);
 		} elsif ($cmd =~ /^b64\s(.*)/) {

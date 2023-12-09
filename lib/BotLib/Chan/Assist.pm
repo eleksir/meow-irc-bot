@@ -1,4 +1,4 @@
-package BotLib::Command;
+package BotLib::Chan::Assist;
 # Парсит команды
 
 use 5.030; ## no critic (ProhibitImplicitImport)
@@ -13,11 +13,11 @@ use Log::Any     qw ($log);
 
 use BotLib::Conf qw (LoadConf);
 use BotLib::Util qw (storedata rakedata deletedata timems utf2md5hex utf2sha1hex utf2sha224hex utf2sha256hex
-	                 utf2sha384hex utf2sha512hex utf2crc32hex utf2murmurhash utf2b64 urlencode irandom);
+	                 utf2sha384hex utf2sha512hex utf2crc32hex utf2murmurhash utf2b64 urlencode irandom PrintMsg);
 
 use version; our $VERSION = qw (1.0);
 use Exporter qw (import);
-our @EXPORT_OK = qw (Help Notify DelayedNotify PrintMsg Todo B64Str Md5Str Sha1Str Sha224Str Sha256Str Sha384Str
+our @EXPORT_OK = qw (Help PrintMsg Todo B64Str Md5Str Sha1Str Sha224Str Sha256Str Sha384Str
                      Sha512Str Crc32Str MurmurhashStr UrlencodeStr IrandNum);
 
 local $OUTPUT_AUTOFLUSH = 1;
@@ -56,96 +56,6 @@ sub Help {
 	return $text;
 }
 
-# Одноразовая напоминалка. Сохраняет сообщение в базу notifications и отправляет его в delayed notifications.
-# Возвращает либо строку-подтверждение, либо подсказку как пользоваться командой.
-# $string Notify($chatid, $amount, $units, $message)
-sub Notify {
-	my $chatid  = shift;
-	my $amount  = shift;
-	my $units   = shift;
-	my $message = shift;
-
-	if (defined $units) {
-		if ($units eq 'm' || $units eq 'minute' || $units eq 'minutes') {
-			$amount = eval { $amount * 60 };
-
-			unless (defined $units) {
-				return sprintf ('Usage: %s NUM [s|seconds|m|minutes|h|hours]', $units);
-			}
-		} elsif ($units eq 'h' || $units eq 'hour' || $units eq 'hours') {
-			$amount = eval { $amount * 60 * 60 };
-
-			unless (defined $units) {
-				return sprintf ('Usage: %s NUM [s|seconds|m|minutes|h|hours]', $units);
-			}
-		} elsif ($units eq 's' || $units eq 'second' || $units eq 'seconds') {
-			$amount = eval { $amount + 0 };
-
-			unless (defined $units) {
-				return sprintf ('Usage: %s NUM [s|seconds|m|minutes|h|hours]', $units);
-			}
-		}
-	} else {
-		$amount = eval { $amount + 0 };
-
-		unless (defined $units) {
-			return sprintf ('Usage: %s NUM [s|seconds|m|minutes|h|hours]', $units);
-		}
-	}
-
-	my $timestamp = time () + $amount;
-	my $msg->{title} = 'Meow-bot notification';
-	my $json;
-
-	if (defined $message && $message ne '') {
-		$msg->{text} = $message;
-	} else {
-		$msg->{text} = 'Напоминалка!';
-	}
-
-	$json = encode_json $msg;
-	storedata ('notifications', $timestamp, $json, $c->{notifications}->{retention_days});
-	DelayedNotify ($c->{channels}->{notify}, $msg->{text});
-
-	return sprintf 'Notification will be sent after %d seconds', $amount;
-}
-
-# Пишет сообщение в чятик и складывает в БД, чтобы позже показать юзеру, когда он появится в чятике
-# undef PrinfMsgForUser($userid, $chatid, $message)
-sub DelayedNotify {
-	my $channel = shift;
-	my $message = shift;
-
-	my $timestamp = timems ();
-	my $data;
-	$data->{message}         = $message;
-	$data->{channel}         = $channel;
-	$data->{timestamp}       = $timestamp;
-	$data->{expiration_time} = $c->{delayed_notifications}->{retention_days} * 24 * 60 * 60 * 1000 + $timestamp;
-	$data->{retention_days}  = $c->{delayed_notifications}->{retention_days} ;
-
-	# Достанем список тех, кто есть в канальчике notify, им на джоине показывать сообщение не надо
-	my @users = keys %{$MAIN::IRC->channel_list->{$c->{channels}->{notify}}}; ## no critic (Modules::RequireExplicitInclusion)
-	$data->{users_shown} = \@users;
-
-	# TODO: Pretty jsonl
-	my $json = encode_json $data;
-	storedata ('delayed_notifications', timems (), $json, $c->{delayed_notifications}->{retention_days});
-
-	return;
-}
-
-# Пишет сообщение в чятик или юзеру
-# undef PrintMsg($chatid, $text)
-sub PrintMsg {
-	my $channel = shift;
-	my $message = shift;
-
-	$MAIN::IRC->send_long_message ('utf8', 0, 'PRIVMSG', $channel, $message); ## no critic (Modules::RequireExplicitInclusion)
-	$log->debug ("[DEBUG] message '$message' sent to $channel");
-
-	return;
-}
 
 # Выгребает список todo-шек из базы
 # $msg = _todoPrint()

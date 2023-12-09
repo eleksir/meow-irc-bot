@@ -26,7 +26,7 @@ use version; our $VERSION = qw (1.0);
 use Exporter qw (import);
 our @EXPORT_OK = qw (timems trim urlencode utf2b64 utf2sha1 utf2md5 utf2sha1hex utf2sha224hex utf2sha256hex
 	                 utf2sha384hex utf2sha512hex utf2md5hex utf2crc32hex utf2murmurhash irandom runcmd storedata
-	                 cleanexpireddata rakedata deletedata);
+	                 cleanexpireddata rakedata deletedata PrintMsg);
 
 local $OUTPUT_AUTOFLUSH = 1;
 
@@ -401,6 +401,18 @@ sub deletedata {
 
 	$cache->remove ($key);
 	$log->debug ("[DEBUG] Key $key removed from $dbname");
+
+	return;
+}
+
+# Пишет сообщение в чятик или юзеру
+# undef PrintMsg($chatid, $text)
+sub PrintMsg {
+	my $channel = shift;
+	my $message = shift;
+
+	$MAIN::IRC->send_long_message ('utf8', 0, 'PRIVMSG', $channel, $message); ## no critic (Modules::RequireExplicitInclusion)
+	$log->debug ("[DEBUG] message '$message' sent to $channel");
 
 	return;
 }
