@@ -1,5 +1,6 @@
 package BotLib::Chan::Registry;
-# Парсит команды
+# Парсит команды и взаимодействует с докерным регистри, согласно спеке описанной вот тут:
+# https://github.com/distribution/distribution/blob/5cb406d511b7b9163bff9b6439072e4892e5ae3b/docs/spec/api.md
 
 use 5.030; ## no critic (ProhibitImplicitImport)
 use strict;
@@ -13,7 +14,7 @@ use JSON::XS     qw (decode_json);
 use Log::Any     qw ($log);
 
 use BotLib::Conf qw (LoadConf);
-use BotLib::Util qw (utf2b64);
+use BotLib::Util qw (utf2b64 urlencode);
 
 use version; our $VERSION = qw (1.0);
 use Exporter qw (import);
@@ -29,12 +30,14 @@ sub Help {
 	my $text  = '';
 	my $csign = $c->{csign};
 
-	$text .= "${csign}help                       - это сообщение\n";
-	$text .= "${csign}ls                         - список репозиториев образов\n";
+	$text .= "${csign}help    - это сообщение\n";
+	$text .= "${csign}ls      - список репозиториев образов\n";
+	$text .= "${csign}ls REPO - список тэгов образов в репозитории\n";
 
 	return $text;
 }
 
+# Отображает список проектов в регистри
 sub ListProjects {
 	my $str = '';
 	my $url = sprintf '%s/v2/_catalog', $c->{registry}->{url};
@@ -46,7 +49,28 @@ sub ListProjects {
 			$str .= $_ . "\n";
 		}
 	} else {
-		$str = "Unable to list repositories"
+		$str = "Unable to list repositories";
+	}
+
+	return $str;
+}
+
+# Отображает список тэгов проекта
+sub ListTags {
+	my $repo = shift;
+	$repo = urlencode ($repo);
+
+	my $str = '';
+	my $url = sprintf '%s/v2/%s/tags/list', $c->{registry}->{url}, $repo;
+
+	my $s = getJson ($url, $c->{registry}->{user}, $c->{registry}->{password});
+
+	if ($s->{success}) {
+		foreach (@{$s->{struct}->{tags}}) {
+			$str .= sprintf "%s:%s\n", $s->{struct}->{name}, $_;
+		}
+	} else {
+		$str = "Unable to list tags for given repository";
 	}
 
 	return $str;

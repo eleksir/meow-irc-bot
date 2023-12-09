@@ -155,6 +155,8 @@ sub Command {
 			$reply = BotLib::Chan::Registry::Help ();
 		} elsif ($cmd eq 'ls') {
 			$reply = BotLib::Chan::Registry::ListProjects ();
+		} elsif ($cmd =~ /^ls\s+(\S+)/) {
+			$reply = BotLib::Chan::Registry::ListTags($1);
 		}
 	}
 
