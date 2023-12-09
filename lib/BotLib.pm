@@ -157,6 +157,8 @@ sub Command {
 			$reply = BotLib::Chan::Registry::ListProjects ();
 		} elsif ($cmd =~ /^ls\s+(\S+)/) {
 			$reply = BotLib::Chan::Registry::ListTags($1);
+		} elsif ($cmd =~ /^(del|delete|rm|remove)\s+(\S+:\S+)/) {
+			$reply = BotLib::Chan::Registry::DeleteTag($2);
 		}
 	}
 
